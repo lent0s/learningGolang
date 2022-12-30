@@ -30,7 +30,7 @@ func main() {
 	C = resultB(float64(cB))
 	A = (-math.Pow(C, 5) + 19*C*C*C - 9*C*C - 18*C + 9) / (-C*C*C*C - 2*C*C*C + 2*C + 1)
 	B = (C*C - 27) / (1 - C*C)
-	r361 = ((A-B)*C + A - B) * C
+	r361 = ((A-B)*C+A-B)*C + C - C
 	r9 = (B*C+A-B)*C + A
 	r38 = (C+A-B)*C + A - B
 	r = C*C - B*C*C + A*C - B*C
