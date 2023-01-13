@@ -2,39 +2,108 @@ package main
 
 import (
 	"fmt"
-	"math"
+	"math/rand"
+	"time"
 )
 
-/*
-(A-B)V=361
-BV+A=9
-V+A-B=38
+const (
+	width  = 80
+	height = 15
+)
 
-(1-B)V=X
-*/
+// Universe является двухмерным полем клеток.
+type Universe [][]bool
 
-func resultB(B float64) (x float64) {
-	x = math.Pow(B, 9) + 2*math.Pow(B, 8) - 17*math.Pow(B, 7) - 401*math.Pow(B, 6) - 651*math.Pow(B, 5) + 435*math.Pow(B, 4) + 1355*math.Pow(B, 3) + 271*math.Pow(B, 2) - 740*B - 361
-	return x
+// NewUniverse возвращает пустую вселенную.
+func NewUniverse() Universe {
+	u := make(Universe, height)
+	for i := range u {
+		u[i] = make([]bool, width)
+	}
+	return u
+}
+
+// Seed заполняет вселенную случайными живыми клетками.
+func (u Universe) Seed() {
+	for i := 0; i < (width * height / 4); i++ {
+		u.Set(rand.Intn(width), rand.Intn(height), true)
+	}
+}
+
+// Set устанавливает состояние конкретной клетки.
+func (u Universe) Set(x, y int, b bool) {
+	u[y][x] = b
+}
+
+// Alive сообщает, является ли клетка живой.
+// Если координаты за пределами вселенной, возвращаемся к началу.
+func (u Universe) Alive(x, y int) bool {
+	x = (x + width) % width
+	y = (y + height) % height
+	return u[y][x]
+}
+
+// Neighbors подсчитывает прилегающие живые клетки.
+func (u Universe) Neighbors(x, y int) int {
+	n := 0
+	for v := -1; v <= 1; v++ {
+		for h := -1; h <= 1; h++ {
+			if !(v == 0 && h == 0) && u.Alive(x+h, y+v) {
+				n++
+			}
+		}
+	}
+	return n
+}
+
+// Next возвращает состояние определенной клетки на следующем шаге.
+func (u Universe) Next(x, y int) bool {
+	n := u.Neighbors(x, y)
+	return n == 3 || n == 2 && u.Alive(x, y)
+}
+
+// String возвращает вселенную как строку
+func (u Universe) String() string {
+	var b byte
+	buf := make([]byte, 0, (width+1)*height)
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			b = ' '
+			if u[y][x] {
+				b = '*'
+			}
+			buf = append(buf, b)
+		}
+		buf = append(buf, '\n')
+	}
+
+	return string(buf)
+}
+
+// Show очищает экран и возвращает вселенную.
+func (u Universe) Show() {
+	fmt.Print("\x0c", u.String())
+}
+
+// Step обновляет состояние следующей вселенной (b) из
+// текущей вселенной (a).
+func Step(a, b Universe) {
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			b.Set(x, y, a.Next(x, y))
+		}
+	}
 }
 
 func main() {
+	a, b := NewUniverse(), NewUniverse()
+	a.Seed()
 
-	var A, B, C, r361, r9, r38, r float64
-	const (
-		cB = -.785
-		//cB = -.965
-
-	)
-
-	C = resultB(float64(cB))
-	A = (-math.Pow(C, 5) + 19*C*C*C - 9*C*C - 18*C + 9) / (-C*C*C*C - 2*C*C*C + 2*C + 1)
-	B = (C*C - 27) / (1 - C*C)
-	r361 = ((A-B)*C+A-B)*C + C - C
-	r9 = (B*C+A-B)*C + A
-	r38 = (C+A-B)*C + A - B
-	r = C*C - B*C*C + A*C - B*C
-
-	fmt.Printf("A=%v\tB=%v\tC=%v\n361=%v\t9=%v\t38=%v\nX=%v", A, B, C, r361, r9, r38, r)
-
+	for i := 0; i < 300; i++ {
+		Step(a, b)
+		a.Show()
+		time.Sleep(time.Second / 30)
+		a, b = b, a // Swap universes
+	}
 }
